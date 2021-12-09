@@ -40,6 +40,78 @@ def fib(n):
 
 class Scene(MovingCameraScene):
     def construct(self):
+        num_of_rows = 16
+        self.next_section("Start")
+        texts = []
+        tex = Text("1", font_size=16).to_edge(UP)
+        texts.append(tex)
+        self.add(tex)
+        square = Square().to_edge(UP)
+        fit_mobject_within_another(tex, square)
+        squares = [square]
+        self.add(tex)
+        for i in range(1, num_of_rows):
+            newtex = Text(r"   ".join([f'{j:g}' for j in pascal_row(i)]),
+                          font_size=16).next_to(tex, DOWN)
+            newsquares = VGroup(*[Square().next_to(squares[-1], DOWN, buff=LARGE_BUFF) for _ in range(i + 1)])
+            newsquares.arrange_in_grid(cols=i + 1, rows=1, buff=LARGE_BUFF)
+            squares.append(newsquares)
+            texts.append(newtex)
+            onsnewtex = split_text_by_word(newtex)
+            for i, square in enumerate(newsquares.submobjects):
+                fit_mobject_within_another(onsnewtex[i], square)
+            self.add(newtex)
+        everything = VGroup(*squares)
+        self.camera.frame.match_height(everything)
+        self.camera.frame.rescale_to_fit(everything.length_over_dim(1) + 2, 1)
+        self.camera.frame.move_to(everything)
+        self.wait(1)
+        self.next_section("Highlight Odds")
+        pascalsquares = []
+        anims = []
+        for rown, row in enumerate(squares):
+            prow = pascal_row(rown)
+            rowfills = []
+            for i, square in enumerate(row):
+                if prow[i] % 2 == 1:
+                    sq: Square = square.copy().set_fill(BLUE, 1.0).set_color(DARK_BLUE)
+                    pascalsquares.append(sq)
+                    # sq.set_stroke(width=0)
+                    rowfills.append(Create(sq))
+            anims.append(LaggedStart(*rowfills))
+        self.play(LaggedStart(*anims), run_time=4)
+        self.wait(1)
+        self.next_section("Build Serpinski")
+        base = Polygon(squares[0].get_center(), squares[-1].submobjects[0].get_center(),
+                       squares[-1].submobjects[-1].get_center()).set_fill(BLUE, 1.0).set_color(DARK_BLUE)
+        tris = [base]
+        self.play(Create(base), *[Uncreate(o) for o in pascalsquares + texts], run_time=3)
+        for i in range(7):
+            newtris = []
+            anims = []
+            for triangle in tris:
+                triangle: Polygon
+                center, outtris = split_triangle(triangle)
+                newtris += outtris
+                anims.append(Create(center.set_fill(BLACK)))
+            self.play(*anims)
+            tris = newtris
+
+
+def split_triangle(base: Polygon) -> List[Polygon]:
+    return [
+        base.copy().scale(0.5).align_to(base, DOWN).flip(X_AXIS),
+        [
+            base.copy().scale(0.5).align_to(base, UP),
+            base.copy().scale(0.5).align_to(base, DL),
+            base.copy().scale(0.5).align_to(base, DR),
+        ]
+    ]
+
+
+class Phi(MovingCameraScene):
+    def construct(self):
+        self.next_section("Start")
         num_of_rows = 10
         texts = []
         tex = Text("1", font_size=16).to_edge(UP)
@@ -65,6 +137,7 @@ class Scene(MovingCameraScene):
         self.camera.frame.rescale_to_fit(everything.length_over_dim(1) + 2, 1)
         self.camera.frame.move_to(everything)
         self.wait(1)
+        self.next_section("Draw Arrows")
         arrs = []
         nums = []
         for i, row in enumerate(squares):
@@ -80,9 +153,10 @@ class Scene(MovingCameraScene):
         self.play(LaggedStart(*[Create(arr) for arr in arrs]), run_time=3)
         self.play(LaggedStart(self.camera.auto_zoom(nums, 4),
                               *[Write(num) for num in nums]), run_time=2)
+        self.next_section("Draw Fibbonaci Numbers")
         newsquares = VGroup(*[Square().next_to(squares[-1], DOWN, buff=LARGE_BUFF) for _ in range(num_of_rows)])
         newsquares.arrange_in_grid(rows=1, buff=LARGE_BUFF)
-        fit_mobject_within_another(newsquares, self.camera.frame)
+        fit_mobject_within_another(newsquares, self.camera.frame, LARGE_BUFF)
         newnums = []
         for i, square in enumerate(newsquares.submobjects):
             num = Text(str(fib(i)))
@@ -92,6 +166,7 @@ class Scene(MovingCameraScene):
                   *[FadeOut(obj) for obj in arrs + texts],
                   run_time=2)
         self.wait(1)
+        self.next_section("Recreate Fibbonaci Numbers")
         numscopy = [n.copy() for n in nums]
         self.play(LaggedStart(*[Unwrite(i) for i in nums[2:][::-1]]), run_time=1.5)
         nums_to_fade_out = []
@@ -107,12 +182,22 @@ class Scene(MovingCameraScene):
                 # MoveAlongPath(nmin1, ArcBetweenPoints(start=nmin1.get_start(), end=numtowrite.get_start())),
             )
         self.wait(1)
+        self.next_section("Draw Fibbonaci Number Ratios")
         frac = SingleStringMathTex(r"\frac{1}{1}", font_size=300)
         numerator = VGroup(frac.submobjects[0])
         line = frac.submobjects[1]
         denominator = VGroup(frac.submobjects[2])
-        fracpos = np.mean(nums[0].get_center(), nums[1].get_center())
-        frac.move_to(fracpos)
+        fracbound = Square(VGroup(*nums[0:2]).width).next_to(nums[2], LEFT, LARGE_BUFF)
+        fit_mobject_within_another(frac, fracbound)
+
+        newsquares += Square().next_to(newsquares[-1], RIGHT, buff=LARGE_BUFF)
+        numparade = []
+        for i in range(2, num_of_rows + 1):
+            num = Text(str(fib(i)))
+            numparade.append(num)
+            fit_mobject_within_another(num, newsquares[i])
+        self.remove(*nums_to_fade_out)
+        self.add(*numparade)
         self.play(
             # *[FadeOut(o) for o in nums_to_fade_out],
             Transform(nums[0], frac.submobjects[0], replace_mobject_with_target_in_scene=True),
@@ -120,40 +205,54 @@ class Scene(MovingCameraScene):
             Transform(nums[1], frac.submobjects[2], replace_mobject_with_target_in_scene=True),
             run_time=2
         )
-        for fibn in range(2, 20):
+        for fibn in range(2, 10):
             newnumerator = str(fib(fibn + 1))
             newdenominator = str(fib(fibn))
             newfrac = SingleStringMathTex(r"\frac{" + newnumerator + "}{" + newdenominator + "}",
-                                          font_size=300).move_to(fracpos)
+                                          font_size=300)
+            fit_mobject_within_another(newfrac, fracbound)
             newnumerator = VGroup(*newfrac.submobjects[:len(newnumerator)])
             newline = newfrac.submobjects[len(newnumerator)]
             newdenominator = VGroup(*newfrac.submobjects[-len(newdenominator):])
-            numcopy = numerator.copy()
             self.play(
-                Transform(numerator, newnumerator, replace_mobject_with_target_in_scene=True),
+                Transform(numparade[0], newnumerator, replace_mobject_with_target_in_scene=True),
                 Transform(line, newline, replace_mobject_with_target_in_scene=True),
-                Transform(numcopy, newdenominator, replace_mobject_with_target_in_scene=True),
-                Transform(denominator, newdenominator, replace_mobject_with_target_in_scene=True)
+                Transform(numerator, newdenominator, replace_mobject_with_target_in_scene=True),
+                Transform(denominator, newdenominator, replace_mobject_with_target_in_scene=True),
+                *[numparade[i].animate.move_to(numparade[i - 1]) for i in
+                  range(1, len(numparade))],
+                run_time=0.5
             )
+            num = Text(str(fib(fibn + num_of_rows)))
+            fit_mobject_within_another(num, newsquares[-1])
+            del numparade[0]
+            numparade.append(num)
             frac = newfrac
             denominator = newdenominator
             line = newline
             numerator = newnumerator
-        phi = MathTex(r"\frac{1+\sqrt{5}}{2}", font_size=300).move_to(self.camera.frame.get_center())
-        self.play(Transform(frac, phi, replace_mobject_with_target_in_scene=True))
+        self.next_section("1.618")
+        phi = MathTex(r"1.618\cdots")
+        fit_mobject_within_another(phi, self.camera.frame, buff=5)
+        self.play(
+            Transform(frac, phi, replace_mobject_with_target_in_scene=True),
+            *[FadeOut(o) for o in numparade],
+            run_time=1.5
+        )
         self.wait(1)
-        self.play(Transform(phi, MathTex(r"\varphi", font_size=500).move_to(self.camera.frame.get_center())))
+        self.next_section("Phi")
+        self.play(Transform(phi, fit_mobject_within_another(MathTex(r"\varphi"), self.camera.frame, buff=5)))
+        self.next_section("Representations of Phi")
         self.wait(1)
-        self.play(Transform(phi, MathTex(r"1 + \cfrac{1}{1 + \cfrac{1}{1 + \cfrac{1}{1 + \cfrac{1}{1 + \ddots}}}}",
-                                         font_size=100).move_to(self.camera.frame.get_center())))
-        self.wait(1)
-        self.play(Transform(phi, MathTex(r"\sqrt{1 + \sqrt{1 + \sqrt{1 + \cdots}}}",
-                                         font_size=200).move_to(self.camera.frame.get_center())))
-        self.wait(1)
-        self.play(Transform(phi, MathTex(r"2\sin 54^\circ",
-                                         font_size=300).move_to(self.camera.frame.get_center())))
-        self.wait(1)
-        print(frac)
+        phireps = [
+            r"\frac{1+\sqrt{5}}{2}",
+            r"1 + \cfrac{1}{1 + \cfrac{1}{1 + \cfrac{1}{1 + \cfrac{1}{1 + \ddots}}}}",
+            r"\sqrt{1 + \sqrt{1 + \sqrt{1 + \cdots}}}",
+            r"2\sin 54^\circ"
+        ]
+        for rep in phireps:
+            self.play(Transform(phi, fit_mobject_within_another(MathTex(rep), self.camera.frame, buff=5)))
+            self.wait(1)
 
 
 def normalize(v):
@@ -193,11 +292,11 @@ class BuildTriangle(MovingCameraScene):
             tex = newtex
 
 
-def fit_mobject_within_another(mobj: Mobject, fit: Mobject) -> Mobject:
+def fit_mobject_within_another(mobj: Mobject, fit: Mobject, buff: float = 0) -> Mobject:
     mobj.move_to(fit)
-    mobj.scale_to_fit_width(fit.width)
+    mobj.scale_to_fit_width(fit.width - (buff * 2))
     if mobj.height > fit.height:
-        mobj.scale_to_fit_height(fit.width)
+        mobj.scale_to_fit_height(fit.height - (buff * 2))
     return mobj
 
 

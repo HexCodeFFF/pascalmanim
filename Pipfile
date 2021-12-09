@@ -4,7 +4,8 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-manim = "*"
+manim = {extras = ["welgb_renderer"], version = "*"}
+grpcio = "*"
 
 [dev-packages]
 
