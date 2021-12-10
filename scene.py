@@ -3,11 +3,15 @@ import math
 from manim import *
 
 
-def pascal_row(n):
-    line = [1]
-    for k in range(n):
-        line.append(round(line[k] * (n - k) / (k + 1)))
-    return line
+def pascal_row(rowIndex):
+    # https://medium.com/@duhroach/fast-fun-with-pascals-triangle-6030e15dced0
+    row = [0] * (rowIndex + 1)
+    row[0] = row[rowIndex] = 1
+    for i in range(0, rowIndex >> 1):
+        x = row[i] * (rowIndex - i) / (i + 1)
+
+        row[i + 1] = row[rowIndex - 1 - i] = x
+    return row
 
 
 def only_numeric_subobjects(mobj: MathTex) -> List[SingleStringMathTex]:
@@ -38,7 +42,107 @@ def fib(n):
     return a
 
 
+def animate_math(scene: Scene, transforms: List[typing.Tuple[str, str]], **mathtexparams) -> MathTex:
+    eq = MathTex(transforms[0][0], **mathtexparams)
+    for old, new in transforms:
+        scene.remove(eq)
+        eq = MathTex(old, **mathtexparams)
+        scene.add(eq)
+        neweq = MathTex(new, **mathtexparams)
+        scene.play(TransformMatchingTex(eq, neweq))
+        eq = neweq
+    return eq
+
+
 class Scene(MovingCameraScene):
+    def construct(self):
+        self.next_section("(x+1)^2")
+        transforms = [
+            (r"{{ ( x + 1 ) }} ^2", r"{{ ( x + 1 ) }} {{ ( x + 1 ) }}"),
+            (r"( {{ x }} + {{ 1 }} ) ( {{ x }} + {{ 1 }} )", r"{{ x }} ^2 + {{ x }} + {{ x }} + {{ 1 }}",),
+            (r"{{ x^2 }} + {{ x }} + {{ x }} + {{ 1 }}", r"{{ x^2 }} + 2 {{ x }} + {{ 1 }}")
+        ]
+        eq = animate_math(self, transforms)
+        self.wait()
+        self.next_section("(x+1)^3")
+        neweq = MathTex(r"( x + 1 )^3")
+        self.play(Transform(eq, neweq))
+        self.remove(eq)
+        transforms = [
+            (r"{{ ( x + 1 ) }} ^3", r"{{ ( x + 1 ) }} {{ ( x + 1 ) }} {{ ( x + 1 ) }}"),
+            (r"( {{ x }} + {{ 1 }} ) ( {{ x }} + {{ 1 }} ) ( {{ x }} + {{ 1 }} )",
+             "{{ x }} ^3 + 3 {{ x }} ^2 + 3 {{ x }} + {{ 1 }}")
+        ]
+        eq = animate_math(self, transforms)
+        self.wait(1)
+        # self.remove(eq)
+        # eqs = MathTex(r"x^3+3x^2+3x+1")
+        # self.add(eqs)
+        binomials = [
+            "{{ 1 }}",
+            "{{ x + 1 }}",
+            "{{ x^2 + 2 x + 1 }}",
+            "{{ x^3 + 3 x^2 + 3 x + 1 }}",
+            "{{ x^4 + 4 x^3 + 6 x^2 + 4 x + 1 }}",
+            "{{ x^5 + 5 x^4 + 10 x^3 + 10 x^2 + 5 x + 1 }}",
+            "{{ x^6 + 6 x^5 + 15 x^4 + 20 x^3 + 15 x^2 + 6 x + 1 }}",
+            "{{ x^7 + 7 x^6 + 21 x^5 + 35 x^4 + 35 x^3 + 21 x^2 + 7 x + 1 }}"
+        ]
+        for rep in binomials[3:]:
+            tobecome = fit_mobject_within_another(MathTex(rep), self.camera.frame, buff=3)
+            self.play(Transform(eq, tobecome))
+            self.wait(1)
+        finaleq = fit_mobject_within_another(MathTex("{{ x^7 + 7 x^6 + 21 x^5 + 35 x^4 + 35 x^3 + 21 x^2 + 7 x + 1 }}"),
+                                             self.camera.frame, buff=3)
+        self.remove(eq)
+        self.add(finaleq)
+        self.wait(1)
+        self.next_section("the pattern")
+        thetrongle = fit_mobject_within_another(
+            MathTex(r" \\ ".join(binomials), tex_environment="gather*"), self.camera.frame, buff=3)
+        self.play(TransformMatchingTex(finaleq, thetrongle))
+        self.wait(1)
+        self.remove(finaleq)
+        self.add(thetrongle)
+        # all of the possible coeffs till row 8 with spaces so i dont select exponents
+        coeffs = list({f" {math.comb(n, k)} " for n in range(8) for k in range(math.ceil((n + 1) / 2))})
+        # add 1 coeffs
+        newbinomials = []
+        for b in binomials:
+            if b != "{{ 1 }}":
+                b = "1 " + b
+            newbinomials.append(b)
+        thetrongle2 = fit_mobject_within_another(
+            MathTex(r" \\ ".join(newbinomials), tex_environment="gather*"),
+            self.camera.frame,
+            buff=3)
+        self.play(TransformMatchingTex(thetrongle, thetrongle2))
+        self.remove(thetrongle)
+        self.remove(thetrongle2)
+        thetrongle2 = fit_mobject_within_another(
+            MathTex(r" \\ ".join(newbinomials), tex_environment="gather*", substrings_to_isolate=coeffs),
+            self.camera.frame,
+            buff=3)
+        self.add(thetrongle2)
+        self.wait(1)
+
+        self.play(thetrongle2.animate.set_color_by_tex_to_color_map({coeff: YELLOW for coeff in coeffs}))
+        self.wait(1)
+        self.next_section("formula")
+        self.remove(thetrongle2)
+        self.play(FadeOut(thetrongle2))
+        binomialformula = MathTex(r"{{ (1+x)^n = }} {{ 1 }} {{ + n x }} {{ + \frac{n(n-1)}{2!}x^2 }} "
+                                  r"{{ + \frac{n(n-1)(n-2)}{3!}x^3 }} {{ + \frac{n(n-1)(n-2)(n-3)}{4!}x^4 }} "
+                                  r"{{ + \cdots }}")
+        fit_mobject_within_another(binomialformula, self.camera.frame, LARGE_BUFF)
+        for so in binomialformula.submobjects:
+            self.next_section()
+            self.play(Write(so))
+        self.next_section()
+        self.play(Transform(binomialformula, MathTex(r"(1+x)^n = \sum_{k=0}^n {n \choose k}x^k")))
+
+
+class Serpinski(MovingCameraScene):
     def construct(self):
         num_of_rows = 16
         self.next_section("Start")
@@ -85,7 +189,11 @@ class Scene(MovingCameraScene):
         base = Polygon(squares[0].get_center(), squares[-1].submobjects[0].get_center(),
                        squares[-1].submobjects[-1].get_center()).set_fill(BLUE, 1.0).set_color(DARK_BLUE)
         tris = [base]
-        self.play(Create(base), *[Uncreate(o) for o in pascalsquares + texts], run_time=3)
+        self.play(*[o.animate.scale(0) for o in pascalsquares], run_time=0.5)
+        self.play(*[AnimationGroup(*[so.animate.scale(0) for so in text.submobjects]) for text in texts], run_time=0.5)
+        self.play(GrowFromCenter(base), run_time=0.5)
+        [self.remove(text) for text in texts]
+        [self.remove(o) for o in pascalsquares]
         for i in range(7):
             newtris = []
             anims = []
