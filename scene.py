@@ -56,90 +56,139 @@ def animate_math(scene: Scene, transforms: List[typing.Tuple[str, str]], **matht
 
 class Scene(MovingCameraScene):
     def construct(self):
-        self.next_section("(x+1)^2")
-        transforms = [
-            (r"{{ ( x + 1 ) }} ^2", r"{{ ( x + 1 ) }} {{ ( x + 1 ) }}"),
-            (r"( {{ x }} + {{ 1 }} ) ( {{ x }} + {{ 1 }} )", r"{{ x }} ^2 + {{ x }} + {{ x }} + {{ 1 }}",),
-            (r"{{ x^2 }} + {{ x }} + {{ x }} + {{ 1 }}", r"{{ x^2 }} + 2 {{ x }} + {{ 1 }}")
-        ]
-        eq = animate_math(self, transforms)
-        self.wait()
-        self.next_section("(x+1)^3")
-        neweq = MathTex(r"( x + 1 )^3")
-        self.play(Transform(eq, neweq))
-        self.remove(eq)
-        transforms = [
-            (r"{{ ( x + 1 ) }} ^3", r"{{ ( x + 1 ) }} {{ ( x + 1 ) }} {{ ( x + 1 ) }}"),
-            (r"( {{ x }} + {{ 1 }} ) ( {{ x }} + {{ 1 }} ) ( {{ x }} + {{ 1 }} )",
-             "{{ x }} ^3 + 3 {{ x }} ^2 + 3 {{ x }} + {{ 1 }}")
-        ]
-        eq = animate_math(self, transforms)
-        self.wait(1)
+        # self.next_section("(x+1)^2")
+        # transforms = [
+        #     (r"{{ ( x + 1 ) }} ^2", r"{{ ( x + 1 ) }} {{ ( x + 1 ) }}"),
+        #     (r"( {{ x }} + {{ 1 }} ) ( {{ x }} + {{ 1 }} )", r"{{ x }} ^2 + {{ x }} + {{ x }} + {{ 1 }}",),
+        #     (r"{{ x^2 }} + {{ x }} + {{ x }} + {{ 1 }}", r"{{ x^2 }} + 2 {{ x }} + {{ 1 }}")
+        # ]
+        # eq = animate_math(self, transforms)
+        # self.wait()
+        # self.next_section("(x+1)^3")
+        # neweq = MathTex(r"( x + 1 )^3")
+        # self.play(Transform(eq, neweq))
         # self.remove(eq)
-        # eqs = MathTex(r"x^3+3x^2+3x+1")
-        # self.add(eqs)
-        binomials = [
-            "{{ 1 }}",
-            "{{ x + 1 }}",
-            "{{ x^2 + 2 x + 1 }}",
-            "{{ x^3 + 3 x^2 + 3 x + 1 }}",
-            "{{ x^4 + 4 x^3 + 6 x^2 + 4 x + 1 }}",
-            "{{ x^5 + 5 x^4 + 10 x^3 + 10 x^2 + 5 x + 1 }}",
-            "{{ x^6 + 6 x^5 + 15 x^4 + 20 x^3 + 15 x^2 + 6 x + 1 }}",
-            "{{ x^7 + 7 x^6 + 21 x^5 + 35 x^4 + 35 x^3 + 21 x^2 + 7 x + 1 }}"
-        ]
-        for rep in binomials[3:]:
-            tobecome = fit_mobject_within_another(MathTex(rep), self.camera.frame, buff=3)
-            self.play(Transform(eq, tobecome))
-            self.wait(1)
-        finaleq = fit_mobject_within_another(MathTex("{{ x^7 + 7 x^6 + 21 x^5 + 35 x^4 + 35 x^3 + 21 x^2 + 7 x + 1 }}"),
-                                             self.camera.frame, buff=3)
-        self.remove(eq)
-        self.add(finaleq)
-        self.wait(1)
-        self.next_section("the pattern")
-        thetrongle = fit_mobject_within_another(
-            MathTex(r" \\ ".join(binomials), tex_environment="gather*"), self.camera.frame, buff=3)
-        self.play(TransformMatchingTex(finaleq, thetrongle))
-        self.wait(1)
-        self.remove(finaleq)
-        self.add(thetrongle)
-        # all of the possible coeffs till row 8 with spaces so i dont select exponents
-        coeffs = list({f" {math.comb(n, k)} " for n in range(8) for k in range(math.ceil((n + 1) / 2))})
-        # add 1 coeffs
-        newbinomials = []
-        for b in binomials:
-            if b != "{{ 1 }}":
-                b = "1 " + b
-            newbinomials.append(b)
-        thetrongle2 = fit_mobject_within_another(
-            MathTex(r" \\ ".join(newbinomials), tex_environment="gather*"),
-            self.camera.frame,
-            buff=3)
-        self.play(TransformMatchingTex(thetrongle, thetrongle2))
-        self.remove(thetrongle)
-        self.remove(thetrongle2)
-        thetrongle2 = fit_mobject_within_another(
-            MathTex(r" \\ ".join(newbinomials), tex_environment="gather*", substrings_to_isolate=coeffs),
-            self.camera.frame,
-            buff=3)
+        # transforms = [
+        #     (r"{{ ( x + 1 ) }} ^3", r"{{ ( x + 1 ) }} {{ ( x + 1 ) }} {{ ( x + 1 ) }}"),
+        #     (r"( {{ x }} + {{ 1 }} ) ( {{ x }} + {{ 1 }} ) ( {{ x }} + {{ 1 }} )",
+        #      "{{ x }} ^3 + 3 {{ x }} ^2 + 3 {{ x }} + {{ 1 }}")
+        # ]
+        # eq = animate_math(self, transforms)
+        # self.wait(1)
+        # # self.remove(eq)
+        # # eqs = MathTex(r"x^3+3x^2+3x+1")
+        # # self.add(eqs)
+        # binomials = [
+        #     "{{ 1 }}",
+        #     "{{ x + 1 }}",
+        #     "{{ x^2 + 2 x + 1 }}",
+        #     "{{ x^3 + 3 x^2 + 3 x + 1 }}",
+        #     "{{ x^4 + 4 x^3 + 6 x^2 + 4 x + 1 }}",
+        #     "{{ x^5 + 5 x^4 + 10 x^3 + 10 x^2 + 5 x + 1 }}",
+        #     "{{ x^6 + 6 x^5 + 15 x^4 + 20 x^3 + 15 x^2 + 6 x + 1 }}",
+        #     "{{ x^7 + 7 x^6 + 21 x^5 + 35 x^4 + 35 x^3 + 21 x^2 + 7 x + 1 }}"
+        # ]
+        # for rep in binomials[3:]:
+        #     tobecome = fit_mobject_within_another(MathTex(rep), self.camera.frame, buff=3)
+        #     self.play(Transform(eq, tobecome))
+        #     self.wait(1)
+        # finaleq = fit_mobject_within_another(MathTex("{{ x^7 + 7 x^6 + 21 x^5 + 35 x^4 + 35 x^3 + 21 x^2 + 7 x + 1 }}"),
+        #                                      self.camera.frame, buff=3)
+        # self.remove(eq)
+        # self.add(finaleq)
+        # self.wait(1)
+        # self.next_section("the pattern")
+        # thetrongle = fit_mobject_within_another(
+        #     MathTex(r" \\ ".join(binomials), tex_environment="gather*"), self.camera.frame, buff=3)
+        # self.play(TransformMatchingTex(finaleq, thetrongle))
+        # self.wait(1)
+        # self.remove(finaleq)
+        # self.add(thetrongle)
+        # # all of the possible coeffs till row 8 with spaces so i dont select exponents
+        # coeffs = list({f" {math.comb(n, k)} " for n in range(8) for k in range(math.ceil((n + 1) / 2))})
+        # # add 1 coeffs to x^n terms
+        # newbinomials = []
+        # for b in binomials:
+        #     if b != "{{ 1 }}":
+        #         b = "1 " + b
+        #     newbinomials.append(b)
+        # thetrongle2 = fit_mobject_within_another(
+        #     MathTex(r" \\ ".join(newbinomials), tex_environment="gather*"),
+        #     self.camera.frame,
+        #     buff=3)
+        # self.play(TransformMatchingTex(thetrongle, thetrongle2))
+        # # recolor
+        # self.remove(thetrongle)
+        # self.remove(thetrongle2)
+        # thetrongle2 = fit_mobject_within_another(
+        #     MathTex(r" \\ ".join(newbinomials), tex_environment="gather*", substrings_to_isolate=coeffs),
+        #     self.camera.frame,
+        #     buff=3)
+        # self.add(thetrongle2)
+        # self.play(thetrongle2.animate.set_color_by_tex_to_color_map({coeff: YELLOW for coeff in coeffs} |
+        #                                                             {tex.get_tex_string(): GRAY for tex in
+        #                                                              thetrongle2.submobjects if
+        #                                                              tex.get_tex_string() not in coeffs}))
+        # self.wait(1)
+        # self.next_section("formula")
+        # self.remove(thetrongle2)
+        # self.play(FadeOut(thetrongle2))
+        bformulatext = r"(1+x)^{n} = 1 + n x + \frac{n(n-1)}{2!}x^2 " \
+                       r"+ \frac{n(n-1)(n-2)}{3!}x^3 + \frac{n(n-1)(n-2)(n-3)}{4!}x^4 " \
+                       r"+ \cdots "
+        # binomialformula = fit_mobject_within_another(MathTex(bformulatext), self.camera.frame, LARGE_BUFF)
+        # fit_mobject_within_another(binomialformula, self.camera.frame, LARGE_BUFF)
+        # for so in binomialformula.submobjects:
+        #     self.next_section()
+        #     self.play(Write(so))
+        # self.next_section("compact formula")
+        # self.play(Transform(binomialformula, MathTex(r"(1+x)^n = \sum_{k=0}^n {n \choose k}x^k")))
+        # self.wait(1)
+        # self.next_section()
+        # self.play(Transform(binomialformula,
+        #                     fit_mobject_within_another(MathTex(bformulatext), self.camera.frame, LARGE_BUFF)))
+        # self.wait(1)
+        # self.next_section()
+        # self.play(self.camera.auto_zoom(binomialformula.submobjects[0], 1))
+        # self.wait()
+        # self.remove(thetrongle2)
+        thetrongle2 = fit_mobject_within_another(MathTex(bformulatext), self.camera.frame, 3)
+        minusonetriangle, transforms = transform_tex_symbols(thetrongle2, "n", "-1")
         self.add(thetrongle2)
-        self.wait(1)
+        self.wait()
+        self.play(*transforms)
+        self.wait()
 
-        self.play(thetrongle2.animate.set_color_by_tex_to_color_map({coeff: YELLOW for coeff in coeffs}))
-        self.wait(1)
-        self.next_section("formula")
-        self.remove(thetrongle2)
-        self.play(FadeOut(thetrongle2))
-        binomialformula = MathTex(r"{{ (1+x)^n = }} {{ 1 }} {{ + n x }} {{ + \frac{n(n-1)}{2!}x^2 }} "
-                                  r"{{ + \frac{n(n-1)(n-2)}{3!}x^3 }} {{ + \frac{n(n-1)(n-2)(n-3)}{4!}x^4 }} "
-                                  r"{{ + \cdots }}")
-        fit_mobject_within_another(binomialformula, self.camera.frame, LARGE_BUFF)
-        for so in binomialformula.submobjects:
-            self.next_section()
-            self.play(Write(so))
-        self.next_section()
-        self.play(Transform(binomialformula, MathTex(r"(1+x)^n = \sum_{k=0}^n {n \choose k}x^k")))
+
+def transform_tex_symbols(mobj: MathTex, symbol_to_replace: str, target_symbol: str, reverse: bool = False) \
+        -> typing.Tuple[MathTex, List[Transform]]:
+    # init vars
+    symbols_to_replace: List[TexSymbol] = [SingleStringMathTex(symbol_to_replace).submobjects[0].path_string,
+                                           SingleStringMathTex(f"^{symbol_to_replace}").submobjects[0].path_string]
+    target_tex_symbols = SingleStringMathTex(target_symbol).submobjects
+    target = MathTex(mobj.tex_string.replace(symbol_to_replace, target_symbol)) \
+        .move_to(mobj).match_height(mobj)
+
+    transforms = []
+    for i, tx in enumerate(mobj.submobjects):
+        target_symbol_index = 0
+        for symbol in tx.submobjects:
+            if hasattr(symbol, "path_string") and symbol.path_string in symbols_to_replace:
+                target_group = VGroup()
+                for j in range(len(target_tex_symbols)):
+                    target_group += target.submobjects[i].submobjects[target_symbol_index]
+                    target_symbol_index += 1
+                if reverse:
+                    transforms.append(Transform(target_group, symbol))
+                else:
+                    transforms.append(Transform(symbol, target_group))
+            else:
+                if reverse:
+                    transforms.append(Transform( target.submobjects[i].submobjects[target_symbol_index], symbol))
+                else:
+                    transforms.append(Transform(symbol, target.submobjects[i].submobjects[target_symbol_index]))
+                target_symbol_index += 1
+    return target, transforms
 
 
 class Serpinski(MovingCameraScene):
