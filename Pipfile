@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 manim = {extras = ["welgb_renderer"], version = "*"}
 grpcio = "*"
+sympy = "*"
 
 [dev-packages]
 

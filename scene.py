@@ -1,18 +1,55 @@
+import functools
 import math
 
+import scipy
+from sympy import binomial
 from manim import *
 
+number = typing.Union[float, int]
 
-def pascal_row(rowIndex):
-    # https://medium.com/@duhroach/fast-fun-with-pascals-triangle-6030e15dced0
-    row = [0] * (rowIndex + 1)
-    row[0] = row[rowIndex] = 1
-    for i in range(0, rowIndex >> 1):
-        x = row[i] * (rowIndex - i) / (i + 1)
 
-        row[i + 1] = row[rowIndex - 1 - i] = x
-    return row
+def is_integer(n: number):
+    if isinstance(n, int):
+        return True
+    else:
+        return n.is_integer()
 
+
+@functools.cache
+def comb_general(n: number, k: number) -> number:
+    """
+    general n choose k / binomial theorem function where n and k can be negative or float
+    """
+    if k < 0:
+        raise ValueError("k cannot be negative.")
+    elif n == 0:
+        return 0
+    elif k == 0:
+        return 1
+    else:  # n > 0
+        if n > 0 and is_integer(n) and is_integer(k):
+            return math.comb(int(n), int(k))
+        else:
+            return float(binomial(n, k))
+
+
+def pascal_row(rowIndex: number, precision: int = 10):
+    if rowIndex >= 0 and is_integer(rowIndex):
+        rowIndex: int
+        # https://medium.com/@duhroach/fast-fun-with-pascals-triangle-6030e15dced0
+        row = [0] * (rowIndex + 1)
+        row[0] = row[rowIndex] = 1
+        for i in range(0, rowIndex >> 1):
+            x = row[i] * (rowIndex - i) / (i + 1)
+
+            row[i + 1] = row[rowIndex - 1 - i] = x
+        return row
+    else:
+        return [comb_general(rowIndex, i) for i in range(precision)]
+
+
+pascal_row(-1)
+print("h")
 
 def only_numeric_subobjects(mobj: MathTex) -> List[SingleStringMathTex]:
     return [m for m in mobj.submobjects if m.get_tex_string().strip().isnumeric()]
@@ -156,59 +193,228 @@ class Scene(MovingCameraScene):
         self.wait()
         self.remove(thetrongle2)
         '''
-        thetrongle2 = fit_mobject_within_another(MathTex(bformulatext), self.camera.frame, 3)
-        minusonetriangle, transforms = transform_tex_symbols(thetrongle2, "n", "-1")
-        self.add(thetrongle2)
+        trianglen = fit_mobject_within_another(MathTex(bformulatext), self.camera.frame, 2)
+        self.add(trianglen)
         self.wait()
-        self.play(*transforms)
+        self.next_section()
+        nset = MathTex(r"n \in \mathbb{N}").to_edge(DOWN, 1)
+        self.play(Write(nset))
         self.wait()
+        self.next_section()
+        qset = MathTex(r"n \in \mathord{?}").to_edge(DOWN, 1)
+        self.play(TransformMatchingTex(nset, qset, transform_mismatches=True))
+        self.remove(nset)
+        self.add(qset)
+        self.wait()
+        self.next_section()
+        ne3 = MathTex(r"n = 3").to_edge(DOWN, 1)
+        self.play(TransformMatchingTex(qset, ne3, transform_mismatches=True))
+        self.remove(qset)
+        self.add(ne3)
+        ne3_steps = [MathTex(r"(1+x)^{z} = 1 + n x + \frac{n(n-1)}{2!}x^2 "
+                             r"+ \frac{n(n-1)(n-2)}{3!}x^3 + \frac{n(n-1)(n-2)(n-3)}{4!}x^4 "
+                             r"+ \cdots"),
+                     # 1
+                     MathTex(r"(1+x)^{3} = 1 + z x + \frac{n(n-1)}{2!}x^2 "
+                             r"+ \frac{n(n-1)(n-2)}{3!}x^3 + \frac{n(n-1)(n-2)(n-3)}{4!}x^4 "
+                             r"+ \cdots"),
+                     # 2
+                     MathTex(r"(1+x)^{3} = 1 + 3 x + \frac{z(z-1)}{2!}x^2 "
+                             r"+ \frac{n(n-1)(n-2)}{3!}x^3 + \frac{n(n-1)(n-2)(n-3)}{4!}x^4 "
+                             r"+ \cdots"),
+                     # 3
+                     MathTex(r"(1+x)^{3} = 1 + 3 x + \frac{z}{2!}x^2 "
+                             r"+ \frac{n(n-1)(n-2)}{3!}x^3 + \frac{n(n-1)(n-2)(n-3)}{4!}x^4 "
+                             r"+ \cdots"),
+                     # 4
+                     MathTex(r"(1+x)^{3} = 1 + 3 x + \frac{6}{2!}x^2 "
+                             r"+ \frac{z(z-1)(z-2)}{3!}x^3 + \frac{n(n-1)(n-2)(n-3)}{4!}x^4 "
+                             r"+ \cdots"),
+                     # 5
+                     MathTex(r"(1+x)^{3} = 1 + 3 x + \frac{6}{2!}x^2 "
+                             r"+ \frac{z}{3!}x^3 + \frac{n(n-1)(n-2)(n-3)}{4!}x^4 "
+                             r"+ \cdots"),
+                     # 6
+                     MathTex(r"(1+x)^{3} = 1 + 3 x + \frac{6}{2!}x^2 "
+                             r"+ \frac{6}{3!}x^3 + \frac{z(z-1)(z-2)(z-3)}{4!}x^4 "
+                             r"+ \cdots"),
+                     # 7
+                     MathTex(r"(1+x)^{3} = 1 + 3 x + \frac{6}{2!}x^2 "
+                             r"+ \frac{6}{3!}x^3 + \frac{3(3-1)(3-2)z}{4!}x^4 "
+                             r"+ \cdots"),
+                     # 8
+                     MathTex(r"(1+x)^{3} = 1 + 3 x + \frac{6}{2!}x^2 "
+                             r"+ \frac{6}{3!}x^3 + \frac{z}{4!}x^4 "
+                             r"+ \cdots"),
+                     # 9
+                     MathTex(r"(1+x)^{3} = 1 + 3 x + \frac{6}{2!}x^2 "
+                             r"+ \frac{6}{3!}x^3 z"),
+                     ]
+        ne3_steps = [mt.match_height(trianglen) for mt in ne3_steps]
+        # self.remove(trianglen)
+        # for i in range(3):
+        #     onscreen_mobjects, transformed_triangle, transforms = transform_tex_symbols(ne3_steps[i], "n", "3", "z")
+        #     self.play(*transforms)
+        #     self.wait()
+        #     self.next_section()
+        #     [self.remove(o) for o in onscreen_mobjects]
+        #
+        # def transform_ne3_step(step, frm, to):
+        #     onscreen_mobjects, transformed_triangle, transforms = transform_tex_symbols(ne3_steps[step], frm, to,
+        #                                                                                 "z")
+        #     self.play(*transforms)
+        #     self.wait()
+        #     self.next_section()
+        #     [self.remove(o) for o in onscreen_mobjects]
+        #     return transformed_triangle
+        #
+        # transform_ne3_step(3, "3(3-1)", "6")
+        # transform_ne3_step(4, "n", "3")
+        # transform_ne3_step(5, "3(3-1)(3-2)", "6")
+        # transform_ne3_step(6, "n", "3")
+        # transform_ne3_step(7, "(3-3)", "0")
+        # transform_ne3_step(8, "3(3-1)(3-2)0", "0")
+        # finaltex = transform_ne3_step(9, r"+\frac{0}{4!}x^4+\cdots", "")
+        nem1 = MathTex(r"n = -1").to_edge(DOWN, 1)
+        # self.play(Transform(finaltex, trianglen), TransformMatchingTex(ne3, nem1, transform_mismatches=True))
+        self.remove(ne3)
+        # self.add(nem1)
+        trianglem1 = trianglen.copy()
+        self.remove(trianglen)
+        onscreen_mobjects, transformed_triangle, transforms = transform_tex_symbols(trianglem1, "n", "-1")
+        self.play(*transforms, Transform(ne3, nem1))
+        self.wait()
+        self.next_section()
+        self.remove(trianglem1)
+        self.remove(*onscreen_mobjects)
+
+        # self.add(transformed_triangle)
+        lastnumerator = transformed_triangle.submobjects[0].submobjects[48:68]
+        self.remove(*lastnumerator)
+        lastnumerator = VGroup(*lastnumerator).copy()
+        del transformed_triangle.submobjects[0].submobjects[48:68]
+
+        lnumtrue = fit_mobject_within_another(MathTex(r"-1 ( -1-1 )( -1-2 )( -1-3 )"), self.camera.frame, 1)
+        self.play(FadeOut(transformed_triangle),
+                  Transform(lastnumerator, lastnumerator.copy().move_to(lnumtrue).match_height(lnumtrue)))
+        self.remove(lastnumerator)
+        self.add(lnumtrue)
+        self.wait()
+        self.next_section()
+
+        lnumadd = MathTex(r"1 ( 2 )( 3 )( 4 )").match_height(lnumtrue)
+        self.play(TransformMatchingTex(lnumtrue, lnumadd, key_map={"-1-1": "2", "-1-2": "3", "-1-3": "4"},
+                                       transform_mismatches=True))
+        self.remove(lnumtrue)
+        self.add(lnumadd)
+        self.wait()
+        self.next_section()
+        fac = MathTex(r"4 !").match_height(lnumadd)
+        self.play(Transform(lnumadd, fac, transform_mismatches=True))
+        self.remove(lnumadd)
+        self.add(fac)
+        self.wait()
+        self.next_section()
+
+        faceq = MathTex(r"(1+x)^{-1} = 1 + -1 x + {{ \frac{2!}{2!} }} x^2 "
+                        r"+ {{\frac{-3!}{3!}}}x^3 + {{\frac{4!}{4!} }}x^4 "
+                        r"+ \cdots")
+        facnum = VGroup(*faceq.submobjects[5].submobjects[0:2])
+        del faceq.submobjects[5].submobjects[0:2]
+        self.play(Transform(fac, fac.copy().move_to(facnum).match_height(facnum)), FadeIn(faceq))
+        self.remove(facnum, fac, faceq)
+        faceq = MathTex(r"(1+x)^{-1}=1+-1x+{{ \frac{2!}{2!} }}x^2"
+                        r"+{{ \frac{-3!}{3!} }}x^3+{{ \frac{4!}{4!} }}x^4"
+                        r"+\cdots")
+        faceqsimp = MathTex(r"(1+x)^{-1}=1+-1x+{{ 1 }}x^2"
+                            r"+{{ -1 }}x^3+{{ 1 }}x^4"
+                            r"+\cdots")
+        self.add(faceq)
+        self.wait()
+        self.next_section()
+
+        self.play(*[Transform(faceq.submobjects[i], faceqsimp.submobjects[i]) for i in range(len(faceq.submobjects))])
+        self.wait()
+        self.next_section()
 
 
-def transform_tex_symbols(mobj: MathTex, symbol_to_replace: str, target_symbol: str, reverse: bool = False) \
-        -> typing.Tuple[MathTex, List[Transform]]:
+def transform_tex_symbols(mobj: MathTex, symbol_to_replace: str, target_symbol: str,
+                          intermediary: Optional[str] = None) -> typing.Tuple[List[Mobject], MathTex, List[Transform]]:
     """
     transform a specific symbol in a MathTex object into another without transforming anything else
     :param mobj: the mathtex object
-    :param symbol_to_replace: the TeX to replace. must be ONE TexObject.
-    :param target_symbol: the TeX to replace it with. can be any length.
-    :param reverse: play the transformation in reverse?
-    :return: (the replaced MathTex object, a list of Transformations)
+    :param symbol_to_replace: the TeX to replace.
+    :param target_symbol: the TeX to replace it with.
+    :param intermediary: if supplied, it will replace the tex of the intermediary with the symbol_to_replace, and then
+        transform only the ones which were originally the intermediary. useful for avoiding wrong replacements.
+    :return: (list of the texsymbols on the screen, the finaltransformed MathTex, a list of Transformations)
     """
     # init vars
-    symbols_to_replace: List[TexSymbol] = [SingleStringMathTex(symbol_to_replace).submobjects[0].path_string,
-                                           SingleStringMathTex(f"^{symbol_to_replace}").submobjects[0].path_string]
+    # for some reason the exponent path strings are different
+    symbols_to_search: List[List[TexSymbol]] = [SingleStringMathTex(intermediary or symbol_to_replace).submobjects,
+                                                SingleStringMathTex("^{" + (intermediary or symbol_to_replace) + "}")
+                                                    .submobjects]
+    symbols_to_replace: List[List[TexSymbol]] = [SingleStringMathTex(symbol_to_replace).submobjects,
+                                                 SingleStringMathTex("^{" + symbol_to_replace + "}")
+                                                     .submobjects]
     target_tex_symbols = SingleStringMathTex(target_symbol).submobjects
-    target = MathTex(mobj.tex_string.replace(symbol_to_replace, target_symbol)) \
+    # "normalize" mobj
+    mobj.become(MathTex(mobj.tex_string), match_height=True, match_center=True)
+    if intermediary:
+        mobj_to_transform = MathTex(mobj.tex_string.replace(intermediary, symbol_to_replace)) \
+            .move_to(mobj).match_height(mobj)
+    else:
+        mobj_to_transform = mobj
+    target = MathTex(mobj.tex_string.replace(intermediary or symbol_to_replace, target_symbol)) \
         .move_to(mobj).match_height(mobj)
 
     transforms = []
+    scene_mobjects = []
     # for every subobject of MathTex (singlestringmathtex)
     for i, tx in enumerate(mobj.submobjects):
+        mobj_symbol_index = 0
+        mobj_transform_index = 0
         target_symbol_index = 0
         # for every subobject of the singlestring (texobject)
-        for symbol in tx.submobjects:
-            # if the symbol matches the one we want to replace
-            if hasattr(symbol, "path_string") and symbol.path_string in symbols_to_replace:
-                # collect all of the target symbols (may be more than one) into a group
-                target_group = VGroup()
-                for j in range(len(target_tex_symbols)):
-                    target_group += target.submobjects[i].submobjects[target_symbol_index]
-                    target_symbol_index += 1
+        while mobj_symbol_index < len(tx.submobjects):
+            # will be set true if any match
+            index_matches = False
+            for sequence in symbols_to_search:
+                # path strings of the sequence we want to look for
+                target_path_strings = [getattr(ts, "path_string", None) for ts in sequence]
+                # create a list of path_strings matching the length and current index
+                mobj_path_strings = [getattr(ts, "path_string", None) for ts in
+                                     tx.submobjects[mobj_symbol_index:mobj_symbol_index + len(sequence)]]
+                if target_path_strings == mobj_path_strings:
+                    index_matches = True
+                    break
+            # if the symbol(s) match the one(s) we want to replace
+            if index_matches:
+                # collect all of the mobj symbols to transform into a group
+                mobj_group = VGroup(*mobj_to_transform.submobjects[i]
+                                    .submobjects[
+                                     mobj_transform_index:mobj_transform_index + len(symbols_to_replace[0])])
+                mobj_transform_index += len(symbols_to_replace[0])
+                mobj_symbol_index += len(symbols_to_search[0])
+                # do the same for the target symbols
+                target_group = VGroup(*target.submobjects[i][target_symbol_index:
+                                                             target_symbol_index + len(target_tex_symbols)])
+                target_symbol_index += len(target_tex_symbols)
                 # and then transform the symbol into the target(s)
-                if reverse:
-                    transforms.append(Transform(target_group, symbol))
-                else:
-                    transforms.append(Transform(symbol, target_group))
+                transforms.append(Transform(mobj_group, target_group))
+                # add created group to vgroup to return
+                scene_mobjects.append(mobj_group)
             # if the symbol does not match
             else:
                 # transform it into its matching symbol on the target, since the path is the same it should just move
                 # and scale
-                if reverse:
-                    transforms.append(Transform(target.submobjects[i].submobjects[target_symbol_index], symbol))
-                else:
-                    transforms.append(Transform(symbol, target.submobjects[i].submobjects[target_symbol_index]))
+                transforms.append(Transform(mobj_to_transform.submobjects[i].submobjects[mobj_transform_index],
+                                            target.submobjects[i].submobjects[target_symbol_index]))
+                scene_mobjects.append(mobj_to_transform.submobjects[i].submobjects[mobj_transform_index])
+                mobj_symbol_index += 1
+                mobj_transform_index += 1
                 target_symbol_index += 1
-    return target, transforms
+    return scene_mobjects, target, transforms
 
 
 class Serpinski(MovingCameraScene):
