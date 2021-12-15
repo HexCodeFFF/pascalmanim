@@ -1,36 +1,30 @@
 import functools
 import math
+from fractions import Fraction
 
-import scipy
-from sympy import binomial
+import gmpy2
+import sympy
 from manim import *
+from scipy.special import binom as scipybinom
 
 number = typing.Union[float, int]
 
 
 def is_integer(n: number):
-    if isinstance(n, int):
-        return True
-    else:
-        return n.is_integer()
+    return isinstance(n, int) or n.is_integer()
 
 
 @functools.cache
-def comb_general(n: number, k: number) -> number:
-    """
-    general n choose k / binomial theorem function where n and k can be negative or float
-    """
-    if k < 0:
-        raise ValueError("k cannot be negative.")
-    elif n == 0:
-        return 0
-    elif k == 0:
-        return 1
-    else:  # n > 0
-        if n > 0 and is_integer(n) and is_integer(k):
-            return math.comb(int(n), int(k))
-        else:
-            return float(binomial(n, k))
+def hybrid(n: number, k: number) -> number:
+    # my own custom hybrid solution
+    if is_integer(n) and is_integer(k):
+        return int(gmpy2.comb(int(n), int(k)))
+    elif n > 0:
+        return scipybinom(n, k)
+    else:
+        # sadly inaccurate for negative decimals
+        # return (-1 ** k) * hybrid(-n + k - 1, k)
+        return float(sympy.binomial(n, k))
 
 
 def pascal_row(rowIndex: number, precision: int = 10):
@@ -45,11 +39,8 @@ def pascal_row(rowIndex: number, precision: int = 10):
             row[i + 1] = row[rowIndex - 1 - i] = x
         return row
     else:
-        return [comb_general(rowIndex, i) for i in range(precision)]
+        return [hybrid(rowIndex, i) for i in range(precision)]
 
-
-pascal_row(-1)
-print("h")
 
 def only_numeric_subobjects(mobj: MathTex) -> List[SingleStringMathTex]:
     return [m for m in mobj.submobjects if m.get_tex_string().strip().isnumeric()]
@@ -193,64 +184,64 @@ class Scene(MovingCameraScene):
         self.wait()
         self.remove(thetrongle2)
         '''
-        trianglen = fit_mobject_within_another(MathTex(bformulatext), self.camera.frame, 2)
-        self.add(trianglen)
-        self.wait()
-        self.next_section()
-        nset = MathTex(r"n \in \mathbb{N}").to_edge(DOWN, 1)
-        self.play(Write(nset))
-        self.wait()
-        self.next_section()
-        qset = MathTex(r"n \in \mathord{?}").to_edge(DOWN, 1)
-        self.play(TransformMatchingTex(nset, qset, transform_mismatches=True))
-        self.remove(nset)
-        self.add(qset)
-        self.wait()
-        self.next_section()
-        ne3 = MathTex(r"n = 3").to_edge(DOWN, 1)
-        self.play(TransformMatchingTex(qset, ne3, transform_mismatches=True))
-        self.remove(qset)
-        self.add(ne3)
-        ne3_steps = [MathTex(r"(1+x)^{z} = 1 + n x + \frac{n(n-1)}{2!}x^2 "
-                             r"+ \frac{n(n-1)(n-2)}{3!}x^3 + \frac{n(n-1)(n-2)(n-3)}{4!}x^4 "
-                             r"+ \cdots"),
-                     # 1
-                     MathTex(r"(1+x)^{3} = 1 + z x + \frac{n(n-1)}{2!}x^2 "
-                             r"+ \frac{n(n-1)(n-2)}{3!}x^3 + \frac{n(n-1)(n-2)(n-3)}{4!}x^4 "
-                             r"+ \cdots"),
-                     # 2
-                     MathTex(r"(1+x)^{3} = 1 + 3 x + \frac{z(z-1)}{2!}x^2 "
-                             r"+ \frac{n(n-1)(n-2)}{3!}x^3 + \frac{n(n-1)(n-2)(n-3)}{4!}x^4 "
-                             r"+ \cdots"),
-                     # 3
-                     MathTex(r"(1+x)^{3} = 1 + 3 x + \frac{z}{2!}x^2 "
-                             r"+ \frac{n(n-1)(n-2)}{3!}x^3 + \frac{n(n-1)(n-2)(n-3)}{4!}x^4 "
-                             r"+ \cdots"),
-                     # 4
-                     MathTex(r"(1+x)^{3} = 1 + 3 x + \frac{6}{2!}x^2 "
-                             r"+ \frac{z(z-1)(z-2)}{3!}x^3 + \frac{n(n-1)(n-2)(n-3)}{4!}x^4 "
-                             r"+ \cdots"),
-                     # 5
-                     MathTex(r"(1+x)^{3} = 1 + 3 x + \frac{6}{2!}x^2 "
-                             r"+ \frac{z}{3!}x^3 + \frac{n(n-1)(n-2)(n-3)}{4!}x^4 "
-                             r"+ \cdots"),
-                     # 6
-                     MathTex(r"(1+x)^{3} = 1 + 3 x + \frac{6}{2!}x^2 "
-                             r"+ \frac{6}{3!}x^3 + \frac{z(z-1)(z-2)(z-3)}{4!}x^4 "
-                             r"+ \cdots"),
-                     # 7
-                     MathTex(r"(1+x)^{3} = 1 + 3 x + \frac{6}{2!}x^2 "
-                             r"+ \frac{6}{3!}x^3 + \frac{3(3-1)(3-2)z}{4!}x^4 "
-                             r"+ \cdots"),
-                     # 8
-                     MathTex(r"(1+x)^{3} = 1 + 3 x + \frac{6}{2!}x^2 "
-                             r"+ \frac{6}{3!}x^3 + \frac{z}{4!}x^4 "
-                             r"+ \cdots"),
-                     # 9
-                     MathTex(r"(1+x)^{3} = 1 + 3 x + \frac{6}{2!}x^2 "
-                             r"+ \frac{6}{3!}x^3 z"),
-                     ]
-        ne3_steps = [mt.match_height(trianglen) for mt in ne3_steps]
+        # trianglen = fit_mobject_within_another(MathTex(bformulatext), self.camera.frame, 2)
+        # self.add(trianglen)
+        # self.wait()
+        # self.next_section()
+        # nset = MathTex(r"n \in \mathbb{N}").to_edge(DOWN, 1)
+        # self.play(Write(nset))
+        # self.wait()
+        # self.next_section()
+        # qset = MathTex(r"n \in \mathord{?}").to_edge(DOWN, 1)
+        # self.play(TransformMatchingTex(nset, qset, transform_mismatches=True))
+        # self.remove(nset)
+        # self.add(qset)
+        # self.wait()
+        # self.next_section()
+        # ne3 = MathTex(r"n = 3").to_edge(DOWN, 1)
+        # self.play(TransformMatchingTex(qset, ne3, transform_mismatches=True))
+        # self.remove(qset)
+        # self.add(ne3)
+        # ne3_steps = [MathTex(r"(1+x)^{z} = 1 + n x + \frac{n(n-1)}{2!}x^2 "
+        #                      r"+ \frac{n(n-1)(n-2)}{3!}x^3 + \frac{n(n-1)(n-2)(n-3)}{4!}x^4 "
+        #                      r"+ \cdots"),
+        #              # 1
+        #              MathTex(r"(1+x)^{3} = 1 + z x + \frac{n(n-1)}{2!}x^2 "
+        #                      r"+ \frac{n(n-1)(n-2)}{3!}x^3 + \frac{n(n-1)(n-2)(n-3)}{4!}x^4 "
+        #                      r"+ \cdots"),
+        #              # 2
+        #              MathTex(r"(1+x)^{3} = 1 + 3 x + \frac{z(z-1)}{2!}x^2 "
+        #                      r"+ \frac{n(n-1)(n-2)}{3!}x^3 + \frac{n(n-1)(n-2)(n-3)}{4!}x^4 "
+        #                      r"+ \cdots"),
+        #              # 3
+        #              MathTex(r"(1+x)^{3} = 1 + 3 x + \frac{z}{2!}x^2 "
+        #                      r"+ \frac{n(n-1)(n-2)}{3!}x^3 + \frac{n(n-1)(n-2)(n-3)}{4!}x^4 "
+        #                      r"+ \cdots"),
+        #              # 4
+        #              MathTex(r"(1+x)^{3} = 1 + 3 x + \frac{6}{2!}x^2 "
+        #                      r"+ \frac{z(z-1)(z-2)}{3!}x^3 + \frac{n(n-1)(n-2)(n-3)}{4!}x^4 "
+        #                      r"+ \cdots"),
+        #              # 5
+        #              MathTex(r"(1+x)^{3} = 1 + 3 x + \frac{6}{2!}x^2 "
+        #                      r"+ \frac{z}{3!}x^3 + \frac{n(n-1)(n-2)(n-3)}{4!}x^4 "
+        #                      r"+ \cdots"),
+        #              # 6
+        #              MathTex(r"(1+x)^{3} = 1 + 3 x + \frac{6}{2!}x^2 "
+        #                      r"+ \frac{6}{3!}x^3 + \frac{z(z-1)(z-2)(z-3)}{4!}x^4 "
+        #                      r"+ \cdots"),
+        #              # 7
+        #              MathTex(r"(1+x)^{3} = 1 + 3 x + \frac{6}{2!}x^2 "
+        #                      r"+ \frac{6}{3!}x^3 + \frac{3(3-1)(3-2)z}{4!}x^4 "
+        #                      r"+ \cdots"),
+        #              # 8
+        #              MathTex(r"(1+x)^{3} = 1 + 3 x + \frac{6}{2!}x^2 "
+        #                      r"+ \frac{6}{3!}x^3 + \frac{z}{4!}x^4 "
+        #                      r"+ \cdots"),
+        #              # 9
+        #              MathTex(r"(1+x)^{3} = 1 + 3 x + \frac{6}{2!}x^2 "
+        #                      r"+ \frac{6}{3!}x^3 z"),
+        #              ]
+        # ne3_steps = [mt.match_height(trianglen) for mt in ne3_steps]
         # self.remove(trianglen)
         # for i in range(3):
         #     onscreen_mobjects, transformed_triangle, transforms = transform_tex_symbols(ne3_steps[i], "n", "3", "z")
@@ -275,67 +266,102 @@ class Scene(MovingCameraScene):
         # transform_ne3_step(7, "(3-3)", "0")
         # transform_ne3_step(8, "3(3-1)(3-2)0", "0")
         # finaltex = transform_ne3_step(9, r"+\frac{0}{4!}x^4+\cdots", "")
-        nem1 = MathTex(r"n = -1").to_edge(DOWN, 1)
-        # self.play(Transform(finaltex, trianglen), TransformMatchingTex(ne3, nem1, transform_mismatches=True))
-        self.remove(ne3)
-        # self.add(nem1)
-        trianglem1 = trianglen.copy()
-        self.remove(trianglen)
-        onscreen_mobjects, transformed_triangle, transforms = transform_tex_symbols(trianglem1, "n", "-1")
-        self.play(*transforms, Transform(ne3, nem1))
-        self.wait()
-        self.next_section()
-        self.remove(trianglem1)
-        self.remove(*onscreen_mobjects)
-
-        # self.add(transformed_triangle)
-        lastnumerator = transformed_triangle.submobjects[0].submobjects[48:68]
-        self.remove(*lastnumerator)
-        lastnumerator = VGroup(*lastnumerator).copy()
-        del transformed_triangle.submobjects[0].submobjects[48:68]
-
-        lnumtrue = fit_mobject_within_another(MathTex(r"-1 ( -1-1 )( -1-2 )( -1-3 )"), self.camera.frame, 1)
-        self.play(FadeOut(transformed_triangle),
-                  Transform(lastnumerator, lastnumerator.copy().move_to(lnumtrue).match_height(lnumtrue)))
-        self.remove(lastnumerator)
-        self.add(lnumtrue)
-        self.wait()
-        self.next_section()
-
-        lnumadd = MathTex(r"1 ( 2 )( 3 )( 4 )").match_height(lnumtrue)
-        self.play(TransformMatchingTex(lnumtrue, lnumadd, key_map={"-1-1": "2", "-1-2": "3", "-1-3": "4"},
-                                       transform_mismatches=True))
-        self.remove(lnumtrue)
-        self.add(lnumadd)
-        self.wait()
-        self.next_section()
-        fac = MathTex(r"4 !").match_height(lnumadd)
-        self.play(Transform(lnumadd, fac, transform_mismatches=True))
-        self.remove(lnumadd)
-        self.add(fac)
-        self.wait()
-        self.next_section()
-
-        faceq = MathTex(r"(1+x)^{-1} = 1 + -1 x + {{ \frac{2!}{2!} }} x^2 "
-                        r"+ {{\frac{-3!}{3!}}}x^3 + {{\frac{4!}{4!} }}x^4 "
-                        r"+ \cdots")
-        facnum = VGroup(*faceq.submobjects[5].submobjects[0:2])
-        del faceq.submobjects[5].submobjects[0:2]
-        self.play(Transform(fac, fac.copy().move_to(facnum).match_height(facnum)), FadeIn(faceq))
-        self.remove(facnum, fac, faceq)
-        faceq = MathTex(r"(1+x)^{-1}=1+-1x+{{ \frac{2!}{2!} }}x^2"
-                        r"+{{ \frac{-3!}{3!} }}x^3+{{ \frac{4!}{4!} }}x^4"
-                        r"+\cdots")
+        # nem1 = MathTex(r"n = -1").to_edge(DOWN, 1)
+        # # self.play(Transform(finaltex, trianglen), TransformMatchingTex(ne3, nem1, transform_mismatches=True))
+        # self.remove(ne3)
+        # # self.add(nem1)
+        # trianglem1 = trianglen.copy()
+        # self.remove(trianglen)
+        # onscreen_mobjects, transformed_triangle, transforms = transform_tex_symbols(trianglem1, "n", "-1")
+        # self.play(*transforms, Transform(ne3, nem1))
+        # self.wait()
+        # self.next_section()
+        # self.remove(trianglem1)
+        # self.remove(*onscreen_mobjects)
+        #
+        # # self.add(transformed_triangle)
+        # lastnumerator = transformed_triangle.submobjects[0].submobjects[48:68]
+        # self.remove(*lastnumerator)
+        # lastnumerator = VGroup(*lastnumerator).copy()
+        # del transformed_triangle.submobjects[0].submobjects[48:68]
+        #
+        # lnumtrue = fit_mobject_within_another(MathTex(r"-1 ( -1-1 )( -1-2 )( -1-3 )"), self.camera.frame, 1)
+        # self.play(FadeOut(transformed_triangle),
+        #           Transform(lastnumerator, lastnumerator.copy().move_to(lnumtrue).match_height(lnumtrue)))
+        # self.remove(lastnumerator)
+        # self.add(lnumtrue)
+        # self.wait()
+        # self.next_section()
+        #
+        # lnumadd = MathTex(r"1 ( 2 )( 3 )( 4 )").match_height(lnumtrue)
+        # self.play(TransformMatchingTex(lnumtrue, lnumadd, key_map={"-1-1": "2", "-1-2": "3", "-1-3": "4"},
+        #                                transform_mismatches=True))
+        # self.remove(lnumtrue)
+        # self.add(lnumadd)
+        # self.wait()
+        # self.next_section()
+        # fac = MathTex(r"4 !").match_height(lnumadd)
+        # self.play(Transform(lnumadd, fac, transform_mismatches=True))
+        # self.remove(lnumadd)
+        # self.add(fac)
+        # self.wait()
+        # self.next_section()
+        #
+        # faceq = MathTex(r"(1+x)^{-1} = 1 + -1 x + {{ \frac{2!}{2!} }} x^2 "
+        #                 r"+ {{\frac{-3!}{3!}}}x^3 + {{\frac{4!}{4!} }}x^4 "
+        #                 r"+ \cdots")
+        # facnum = VGroup(*faceq.submobjects[5].submobjects[0:2])
+        # del faceq.submobjects[5].submobjects[0:2]
+        # self.play(Transform(fac, fac.copy().move_to(facnum).match_height(facnum)), FadeIn(faceq))
+        # self.remove(facnum, fac, faceq)
+        # faceq = MathTex(r"(1+x)^{-1}=1+-1x+{{ \frac{2!}{2!} }}x^2"
+        #                 r"+{{ \frac{-3!}{3!} }}x^3+{{ \frac{4!}{4!} }}x^4"
+        #                 r"+\cdots")
         faceqsimp = MathTex(r"(1+x)^{-1}=1+-1x+{{ 1 }}x^2"
                             r"+{{ -1 }}x^3+{{ 1 }}x^4"
                             r"+\cdots")
-        self.add(faceq)
-        self.wait()
-        self.next_section()
+        # self.add(faceq)
+        # self.wait()
+        # self.next_section()
+        #
+        # self.play(*[Transform(faceq.submobjects[i], faceqsimp.submobjects[i]) for i in range(len(faceq.submobjects))])
+        # self.remove(faceq)
+        self.add(faceqsimp)
+        # self.wait()
+        # self.next_section()
 
-        self.play(*[Transform(faceq.submobjects[i], faceqsimp.submobjects[i]) for i in range(len(faceq.submobjects))])
+        pascal_tri = []
+        pascal_nums = []
+        for row in range(-5, 6):
+            row = pascal_row(row + 0.5, precision=10)
+            rowl = [Square()]
+            nums = []
+            if pascal_tri:
+                rowl[0].next_to(pascal_tri[-1][0], DOWN, 0).shift(LEFT)
+            num = fit_mobject_within_another(MathTex(tex_format_num(row[0])), rowl[0], 0.5)
+            nums.append(num)
+            for i in row[1:]:
+                sq = Square().next_to(rowl[-1], RIGHT, 0)
+                num = fit_mobject_within_another(MathTex(tex_format_num(i)), sq, 0.5)
+                nums.append(num)
+                rowl.append(sq)
+            pascal_tri.append(rowl)
+            pascal_nums.append(VGroup(*nums))
+        pascal_nums = VGroup(*pascal_nums)
+        fit_mobject_within_another(pascal_nums, self.camera.frame, 1)
+        pascal_nums.shift(ORIGIN - pascal_nums[5].submobjects[0].get_center())  # move row 0 to center
+        self.add(pascal_nums)
         self.wait()
-        self.next_section()
+
+
+def tex_format_num(num: number, max_len: int = 5) -> str:
+    if is_integer(num):
+        return str(int(num))
+    frac = Fraction(num)
+    if len(str(frac.numerator)) > max_len or len(str(frac.denominator)) > max_len:
+        return str(round(num, max_len - 2))
+    else:
+        return r"\frac{" + str(frac.numerator) + "}{" + str(frac.denominator) + "}"
 
 
 def transform_tex_symbols(mobj: MathTex, symbol_to_replace: str, target_symbol: str,
@@ -678,7 +704,7 @@ class BuildTriangle(MovingCameraScene):
 def fit_mobject_within_another(mobj: Mobject, fit: Mobject, buff: float = 0) -> Mobject:
     mobj.move_to(fit)
     mobj.scale_to_fit_width(fit.width - (buff * 2))
-    if mobj.height > fit.height:
+    if mobj.height > (fit.height - (buff * 2)):
         mobj.scale_to_fit_height(fit.height - (buff * 2))
     return mobj
 
