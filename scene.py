@@ -7,11 +7,13 @@ import sympy
 from manim import *
 from scipy.special import binom as scipybinom
 
-number = typing.Union[float, int]
+number = typing.Union[float, int, complex]
 
 
-def is_integer(n: number):
-    return isinstance(n, int) or n.is_integer()
+def is_integer(n: number) -> bool:
+    if isinstance(n, complex):
+        return False
+    return int(n) == n
 
 
 @functools.cache
@@ -19,16 +21,20 @@ def hybrid(n: number, k: number) -> number:
     # my own custom hybrid solution
     if is_integer(n) and is_integer(k):
         return int(gmpy2.comb(int(n), int(k)))
-    elif n > 0:
+    elif n > 0 and not (isinstance(n, complex) or isinstance(k, complex)):
         return scipybinom(n, k)
     else:
         # sadly inaccurate for negative decimals
         # return (-1 ** k) * hybrid(-n + k - 1, k)
-        return float(sympy.binomial(n, k))
+        out = sympy.binomial(n, k)
+        if out.is_complex:
+            return complex(out)
+        else:
+            return float(out)
 
 
 def pascal_row(rowIndex: number, precision: int = 10):
-    if rowIndex >= 0 and is_integer(rowIndex):
+    if is_integer(rowIndex) and rowIndex >= 0:
         rowIndex: int
         # https://medium.com/@duhroach/fast-fun-with-pascals-triangle-6030e15dced0
         row = [0] * (rowIndex + 1)
@@ -317,7 +323,7 @@ class Scene(MovingCameraScene):
         # faceq = MathTex(r"(1+x)^{-1}=1+-1x+{{ \frac{2!}{2!} }}x^2"
         #                 r"+{{ \frac{-3!}{3!} }}x^3+{{ \frac{4!}{4!} }}x^4"
         #                 r"+\cdots")
-        faceqsimp = MathTex(r"(1+x)^{-1}=1+-1x+{{ 1 }}x^2"
+        faceqsimp = MathTex(r"(1+x)^{-1}={{1}}+{{-1}}x+{{ 1 }}x^2"
                             r"+{{ -1 }}x^3+{{ 1 }}x^4"
                             r"+\cdots")
         # self.add(faceq)
@@ -327,13 +333,13 @@ class Scene(MovingCameraScene):
         # self.play(*[Transform(faceq.submobjects[i], faceqsimp.submobjects[i]) for i in range(len(faceq.submobjects))])
         # self.remove(faceq)
         self.add(faceqsimp)
-        # self.wait()
+        self.wait()
         # self.next_section()
 
         pascal_tri = []
         pascal_nums = []
         for row in range(-5, 6):
-            row = pascal_row(row + 0.5, precision=10)
+            row = pascal_row(row, precision=15)
             rowl = [Square()]
             nums = []
             if pascal_tri:
@@ -349,14 +355,35 @@ class Scene(MovingCameraScene):
             pascal_nums.append(VGroup(*nums))
         pascal_nums = VGroup(*pascal_nums)
         fit_mobject_within_another(pascal_nums, self.camera.frame, 1)
-        pascal_nums.shift(ORIGIN - pascal_nums[5].submobjects[0].get_center())  # move row 0 to center
-        self.add(pascal_nums)
+        pascal_nums.shift(ORIGIN - pascal_nums[5][0].get_center())  # move row 0 to center
+        formula1 = faceqsimp[1::2]
+        self.play(Write(pascal_nums[5:]),
+                  *[Transform(formula1[i], pascal_nums[4][i]) for i in range(len(formula1))],
+                  *[FadeOut(obj) for obj in faceqsimp[::2]],
+                  )
+        self.play(Write(VGroup(*pascal_nums[4].submobjects[len(formula1):])))
+        self.wait()
+        self.next_section()
+        self.play(Write(pascal_nums[3::-1]))
+        self.wait()
+        self.next_section()
+        protate = pascal_nums[5:].copy().rotate(TAU / 3, OUT, pascal_nums[5].get_center()) \
+            .shift(pascal_nums[4][0].get_center() - pascal_nums[5].get_center()).set_fill(opacity=0).set_stroke(
+            opacity=0)
+        [[num.rotate(-TAU / 3) for num in row] for row in protate]
+        transforms = []
+        for i, row in enumerate(pascal_nums[5:]):
+            for j, num in enumerate(row):
+                transforms.append(Transform(num.copy(), protate[i][j], path_arc=PI))
+        self.play(*transforms)
         self.wait()
 
 
 def tex_format_num(num: number, max_len: int = 5) -> str:
     if is_integer(num):
         return str(int(num))
+    if isinstance(num, complex):
+        return f"{tex_format_num(num.real, max_len)}+{tex_format_num(num.imag, max_len)}i"
     frac = Fraction(num)
     if len(str(frac.numerator)) > max_len or len(str(frac.denominator)) > max_len:
         return str(round(num, max_len - 2))

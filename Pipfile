@@ -8,6 +8,7 @@ manim = {extras = ["welgb_renderer"], version = "*"}
 grpcio = "*"
 sympy = "*"
 gmpy2 = "*"
+cython = "*"
 
 [dev-packages]
 
